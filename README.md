@@ -1,6 +1,6 @@
 
 # **OrderBookEngine**  
-A high-performance **C++ Order Book** implementation with multithreading, priority queues, and real-time matching.  
+A high-performance **C++ Order Book** implementation.
 
 ## **Current Status**  
 This project is in its **early development phase**, focused on building a **core order book structure** with efficient order matching. Right now, the implementation includes:  
@@ -8,12 +8,6 @@ This project is in its **early development phase**, focused on building a **core
 ✅ **Limit order handling** with insertion/removal  
 ✅ **Priority queue-based matching system**  
 
-## **Upcoming Goals**  
-🔹 Implement **market orders & partial fills**  
-🔹 Improve **matching engine performance**  
-🔹 Introduce **multithreading** for concurrent order processing  
-🔹 Optimise **low-latency execution**  
-🔹 Add **backtesting support** for simulating market conditions  
 
 ## **Why This Project?**  
 This is a learning-driven project to gain hands-on experience in:  
