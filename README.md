@@ -1,4 +1,3 @@
-
 # **OrderBookEngine**  
 A high-performance **C++ Order Book** implementation.
 
@@ -19,5 +18,4 @@ This is a learning-driven project to gain hands-on experience in:
 
 ## **Contributing**  
 Open to feedback, suggestions, and collaboration! If you're experienced in **quant trading systems** or **low-latency optimisation**, feel free to reach out.  
-
-📂 **GitHub Repo:** [OrderBookEngine](https://github.com/olivewensemius/OrderBookEngine)  
+ 
