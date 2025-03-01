@@ -1,7 +1,13 @@
 #include <iostream>
 #include "OrderBook.h"
+#include "../tests/benchmark.cpp"
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc > 1 && std::string(argv[1]) == "benchmark") {
+        benchmark();
+        return 0;
+    }
+    
     OrderBook ob;
     ob.addOrder(1, 50.0, 100, "buy");
     ob.addOrder(2, 51.0, 200, "buy");
