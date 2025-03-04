@@ -16,13 +16,13 @@ int main(int argc, char* argv[]) {
 
     ob.printOrders();
 
-    OrderBook::Order bestBuy = ob.findBestBuyOrder();
-    std::cout << "\nBest Buy Order: " << bestBuy.quantity << " shares at $" << bestBuy.price << "\n";
+    std::shared_ptr<OrderBook::Order> bestBuy = ob.findBestBuyOrder();
+    std::cout << "\nBest Buy Order: " << bestBuy->quantity << " shares at $" << bestBuy->price << "\n";
 
-    OrderBook::Order bestSell = ob.findBestSellOrder();
-    std::cout << "Best Sell Order: " << bestSell.quantity << " shares at $" << bestSell.price << "\n";
+    std::shared_ptr<OrderBook::Order> bestSell = ob.findBestSellOrder();
+    std::cout << "Best Sell Order: " << bestSell->quantity << " shares at $" << bestSell->price << "\n";
 
-    std::list<OrderBook::Order> ordersAt50 = ob.findOrdersAtPrice(50.5, "sell");
+    std::list<std::shared_ptr<OrderBook::Order>> ordersAt50 = ob.findOrdersAtPrice(50.5, "sell");
     
     ob.printList(ordersAt50);
 
