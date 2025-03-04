@@ -1,54 +1,57 @@
 #include "OrderBook.h"
 
-void OrderBook::addOrder(int orderId, double price, int quantity, 
-const std::string& orderType) {
-    auto newOrder = std::make_shared<Order>(orderId, price, quantity, orderType);
+void OrderBook::addOrder(int orderId, double price, int quantity, const std::string& orderType) {
+    auto newOrder = std::make_unique<Order>(orderId, price, quantity, orderType);
 
-    if(orderType == "buy"){
-        buyOrders[price].push_back(newOrder);
-    }else if(orderType == "sell"){
-        sellOrders[price].push_back(newOrder);
-    };
+    if (orderType == "buy") {
+        buyOrders[price].push_back(std::move(newOrder));
+    } else if (orderType == "sell") {
+        sellOrders[price].push_back(std::move(newOrder));
+    }
 
     std::cout << "Order Added: " << orderType << " " << quantity 
               << " shares at $" << price << std::endl;
-
 }
 
-std::shared_ptr<OrderBook::Order> OrderBook::findBestBuyOrder(){
-    if(!buyOrders.empty()){
-        return buyOrders.rbegin()->second.front();
+const OrderBook::Order* OrderBook::findBestBuyOrder() {
+    if (!buyOrders.empty()) {
+        return buyOrders.rbegin()->second.front().get();
     }
     throw std::runtime_error("No buy orders available");
 }
 
-std::shared_ptr<OrderBook::Order> OrderBook::findBestSellOrder(){
-    if(!sellOrders.empty()){
-        return sellOrders.begin()->second.front();
+const OrderBook::Order* OrderBook::findBestSellOrder() {
+    if (!sellOrders.empty()) {
+        return sellOrders.begin()->second.front().get();
     }
     throw std::runtime_error("No sell orders available");
-    
 }
 
-std::list<std::shared_ptr<OrderBook::Order>> OrderBook::findOrdersAtPrice(double price, std::string orderType) {
+std::list<const OrderBook::Order*> OrderBook::findOrdersAtPrice(double price, const std::string& orderType) {
+    std::list<const OrderBook::Order*> ordersList;
+
     if (orderType == "buy") {
         auto it = buyOrders.find(price);
         if (it != buyOrders.end()) {
-            return it->second;
+            for (const auto& order : it->second) {
+                ordersList.push_back(order.get());  // ✅ Convert unique_ptr to raw pointer
+            }
         }
     } else {
         auto it = sellOrders.find(price);
         if (it != sellOrders.end()) {
-            return it->second;
+            for (const auto& order : it->second) {
+                ordersList.push_back(order.get());
+            }
         }
     }
-    return {};
+    return ordersList;
 }
 
 void OrderBook::printOrders() {
     std::cout << "\nBuy Orders:\n";
     for (auto it = buyOrders.rbegin(); it != buyOrders.rend(); ++it) {
-        for (const auto &order : it->second) {
+        for (const auto& order : it->second) {
             std::cout << "ID: " << order->orderId << " | " 
                       << order->quantity << " shares at $" << order->price << "\n";
         }
@@ -56,14 +59,14 @@ void OrderBook::printOrders() {
 
     std::cout << "\nSell Orders:\n";
     for (auto it = sellOrders.begin(); it != sellOrders.end(); ++it) {
-        for (const auto &order : it->second) {
+        for (const auto& order : it->second) {
             std::cout << "ID: " << order->orderId << " | " 
                       << order->quantity << " shares at $" << order->price << "\n";
         }
     }
 }
 
-void OrderBook::printList(std::list<std::shared_ptr<OrderBook::Order>> orderList){
+void OrderBook::printList(const std::list<const OrderBook::Order*>& orderList) {
     for (const auto& order : orderList) {
         std::cout << "ID: " << order->orderId << " | " 
                   << order->quantity << " shares at $" << order->price << "\n";

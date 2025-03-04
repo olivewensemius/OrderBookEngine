@@ -3,9 +3,9 @@
 
 #include <iostream>
 #include <map>
-#include <string>
 #include <list>
-#include <memory>
+#include <memory>  // ✅ Include unique_ptr
+#include <string>
 
 class OrderBook {
 public:
@@ -18,15 +18,15 @@ public:
             : orderId(id), price(p), quantity(q), orderType(type) {}
     };
 
-    std::map<double, std::list<std::shared_ptr<Order>>> buyOrders;
-    std::map<double, std::list<std::shared_ptr<Order>>> sellOrders;
+    std::map<double, std::list<std::unique_ptr<Order>>> buyOrders;
+    std::map<double, std::list<std::unique_ptr<Order>>> sellOrders;
 
     void addOrder(int orderId, double price, int quantity, const std::string& orderType);
-    std::shared_ptr<Order> findBestBuyOrder();
-    std::shared_ptr<Order> findBestSellOrder();
-    std::list<std::shared_ptr<Order>> findOrdersAtPrice(double price, std::string orderType);
+    const Order* findBestBuyOrder();
+    const Order* findBestSellOrder();
+    std::list<const Order*> findOrdersAtPrice(double price, const std::string& orderType);
     void printOrders();
-    void printList(std::list<std::shared_ptr<Order>> orderList);
+    void printList(const std::list<const Order*>& orderList);
 };
 
 #endif // ORDERBOOK_H
