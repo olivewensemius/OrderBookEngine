@@ -11,6 +11,8 @@ void OrderBook::addOrder(int orderId, double price, int quantity, const std::str
 
     std::cout << "Order Added: " << orderType << " " << quantity 
               << " shares at $" << price << std::endl;
+
+    matchOrders();
 }
 
 const OrderBook::Order* OrderBook::findBestBuyOrder() {
@@ -70,5 +72,48 @@ void OrderBook::printList(const std::list<const OrderBook::Order*>& orderList) {
     for (const auto& order : orderList) {
         std::cout << "ID: " << order->orderId << " | " 
                   << order->quantity << " shares at $" << order->price << "\n";
+    }
+}
+
+void OrderBook::matchOrders() {
+    while (!buyOrders.empty() && !sellOrders.empty()){
+        auto bestBid = buyOrders.rbegin();
+        auto bestAsk = sellOrders.begin();
+
+        if(bestBid->first < bestAsk->first){
+            break;
+        }
+
+        auto& buyQueue = bestBid->second;
+        auto& sellQueue = bestAsk->second;
+
+        while(!buyQueue.empty() && !sellQueue.empty()){
+            auto& buyOrder = buyQueue.front();
+            auto& sellOrder = sellQueue.front();
+
+            int tradeQuantity = std::min(buyOrder->quantity, sellOrder->quantity);
+            double tradePrice = sellOrder->price;
+
+            std::cout << "Executed Trade: " << tradeQuantity << " shares at $" << tradePrice << "\n";
+
+            buyOrder->quantity -= tradeQuantity;
+            sellOrder->quantity -= tradeQuantity;
+
+            if (buyOrder->quantity == 0) {
+                buyQueue.pop_front();
+            }
+            if (sellOrder->quantity == 0) {
+                sellQueue.pop_front();
+            }
+        }
+
+        if (buyQueue.empty()) {
+            buyOrders.erase(bestBid->first);
+        }
+        if (sellQueue.empty()) {
+            sellOrders.erase(bestAsk->first);
+        }
+
+
     }
 }

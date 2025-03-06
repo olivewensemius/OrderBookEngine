@@ -4,7 +4,7 @@
 #include <iostream>
 #include <map>
 #include <list>
-#include <memory>  // ✅ Include unique_ptr
+#include <memory>
 #include <string>
 
 class OrderBook {
@@ -27,6 +27,7 @@ public:
     std::list<const Order*> findOrdersAtPrice(double price, const std::string& orderType);
     void printOrders();
     void printList(const std::list<const Order*>& orderList);
+    void matchOrders();
 };
 
 #endif // ORDERBOOK_H

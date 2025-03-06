@@ -25,6 +25,14 @@ int main(int argc, char* argv[]) {
     std::list<const OrderBook::Order*> ordersAt50 = ob.findOrdersAtPrice(50.5, "sell");
     
     ob.printList(ordersAt50);
+    
+    // Add orders and test matching
+    ob.addOrder(1, 100.0, 50, "buy");
+    ob.addOrder(2, 102.0, 100, "buy");
+    ob.addOrder(3, 101.0, 200, "buy");
+    ob.addOrder(4, 101.5, 150, "sell");
+    ob.addOrder(5, 101.0, 50, "sell");
+    ob.printOrders();
 
 
     return 0;
