@@ -1,12 +1,12 @@
 #include "OrderBook.h"
 
 void OrderBook::addOrder(int orderId, double price, int quantity, const std::string& orderType) {
-    auto newOrder = std::make_unique<Order>(orderId, price, quantity, orderType);
-
+    auto newOrder = Order(orderId, price, quantity, orderType);
+    
     if (orderType == "buy") {
-        buyOrders[price].push_back(std::move(newOrder));
+        buyOrders.push(newOrder);
     } else if (orderType == "sell") {
-        sellOrders[price].push_back(std::move(newOrder));
+        sellOrders.push(newOrder);
     }
 
     std::cout << "Order Added: " << orderType << " " << quantity 
@@ -17,14 +17,14 @@ void OrderBook::addOrder(int orderId, double price, int quantity, const std::str
 
 const OrderBook::Order* OrderBook::findBestBuyOrder() {
     if (!buyOrders.empty()) {
-        return buyOrders.rbegin()->second.front().get();
+        return &buyOrders.top();
     }
     throw std::runtime_error("No buy orders available");
 }
 
 const OrderBook::Order* OrderBook::findBestSellOrder() {
     if (!sellOrders.empty()) {
-        return sellOrders.begin()->second.front().get();
+        return &sellOrders.top();
     }
     throw std::runtime_error("No sell orders available");
 }
@@ -33,38 +33,45 @@ std::list<const OrderBook::Order*> OrderBook::findOrdersAtPrice(double price, co
     std::list<const OrderBook::Order*> ordersList;
 
     if (orderType == "buy") {
-        auto it = buyOrders.find(price);
-        if (it != buyOrders.end()) {
-            for (const auto& order : it->second) {
-                ordersList.push_back(order.get());  // ✅ Convert unique_ptr to raw pointer
+        auto tempQueue = buyOrders;
+        while (!tempQueue.empty()) {
+            const auto& order = tempQueue.top();
+            if (order.price == price) {
+                ordersList.push_back(&order);
             }
+            tempQueue.pop();
         }
     } else {
-        auto it = sellOrders.find(price);
-        if (it != sellOrders.end()) {
-            for (const auto& order : it->second) {
-                ordersList.push_back(order.get());
+        auto tempQueue = sellOrders;
+        while (!tempQueue.empty()) {
+            const auto& order = tempQueue.top();
+            if (order.price == price) {
+                ordersList.push_back(&order);
             }
+            tempQueue.pop();
         }
     }
     return ordersList;
 }
 
+
 void OrderBook::printOrders() {
-    std::cout << "\nBuy Orders:\n";
-    for (auto it = buyOrders.rbegin(); it != buyOrders.rend(); ++it) {
-        for (const auto& order : it->second) {
-            std::cout << "ID: " << order->orderId << " | " 
-                      << order->quantity << " shares at $" << order->price << "\n";
-        }
+    std::cout << "\nBuy Orders (Highest Price First):\n";
+    auto tempBuy = buyOrders;
+    while (!tempBuy.empty()) {
+        const auto& order = tempBuy.top();
+        std::cout << "ID: " << order.orderId << " | " 
+                  << order.quantity << " shares at $" << order.price << "\n";
+        tempBuy.pop();
     }
 
-    std::cout << "\nSell Orders:\n";
-    for (auto it = sellOrders.begin(); it != sellOrders.end(); ++it) {
-        for (const auto& order : it->second) {
-            std::cout << "ID: " << order->orderId << " | " 
-                      << order->quantity << " shares at $" << order->price << "\n";
-        }
+    std::cout << "\nSell Orders (Lowest Price First):\n";
+    auto tempSell = sellOrders;
+    while (!tempSell.empty()) {
+        const auto& order = tempSell.top();
+        std::cout << "ID: " << order.orderId << " | " 
+                  << order.quantity << " shares at $" << order.price << "\n";
+        tempSell.pop();
     }
 }
 
@@ -75,45 +82,37 @@ void OrderBook::printList(const std::list<const OrderBook::Order*>& orderList) {
     }
 }
 
-void OrderBook::matchOrders() {
-    while (!buyOrders.empty() && !sellOrders.empty()){
-        auto bestBid = buyOrders.rbegin();
-        auto bestAsk = sellOrders.begin();
 
-        if(bestBid->first < bestAsk->first){
+void OrderBook::matchOrders() {
+    while (!buyOrders.empty() && !sellOrders.empty()) {
+        auto bestBid = buyOrders.top();  // Get best buy order (highest price)
+        auto bestAsk = sellOrders.top(); // Get best sell order (lowest price)
+
+        if (bestBid.price < bestAsk.price) {
+            // No matching possible, exit
             break;
         }
 
-        auto& buyQueue = bestBid->second;
-        auto& sellQueue = bestAsk->second;
+        // Determine trade quantity
+        int tradeQuantity = std::min(bestBid.quantity, bestAsk.quantity);
+        double tradePrice = bestAsk.price;  // Trade happens at the ask price
 
-        while(!buyQueue.empty() && !sellQueue.empty()){
-            auto& buyOrder = buyQueue.front();
-            auto& sellOrder = sellQueue.front();
+        std::cout << "Executed Trade: " << tradeQuantity << " shares at $" << tradePrice << "\n";
 
-            int tradeQuantity = std::min(buyOrder->quantity, sellOrder->quantity);
-            double tradePrice = sellOrder->price;
+        // Update order quantities
+        bestBid.quantity -= tradeQuantity;
+        bestAsk.quantity -= tradeQuantity;
 
-            std::cout << "Executed Trade: " << tradeQuantity << " shares at $" << tradePrice << "\n";
+        // Remove fully executed orders
+        buyOrders.pop();
+        sellOrders.pop();
 
-            buyOrder->quantity -= tradeQuantity;
-            sellOrder->quantity -= tradeQuantity;
-
-            if (buyOrder->quantity == 0) {
-                buyQueue.pop_front();
-            }
-            if (sellOrder->quantity == 0) {
-                sellQueue.pop_front();
-            }
+        // If an order is partially filled, reinsert it
+        if (bestBid.quantity > 0) {
+            buyOrders.push(bestBid);
         }
-
-        if (buyQueue.empty()) {
-            buyOrders.erase(bestBid->first);
+        if (bestAsk.quantity > 0) {
+            sellOrders.push(bestAsk);
         }
-        if (sellQueue.empty()) {
-            sellOrders.erase(bestAsk->first);
-        }
-
-
     }
 }

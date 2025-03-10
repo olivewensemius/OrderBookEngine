@@ -6,6 +6,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <queue>
 
 class OrderBook {
 public:
@@ -16,10 +17,14 @@ public:
         std::string orderType;  
         Order(int id, double p, int q, std::string type) 
             : orderId(id), price(p), quantity(q), orderType(type) {}
+        
+        bool operator<(const Order& other) const {
+                return (orderType == "buy") ? (price < other.price) : (price > other.price);
+            }
     };
 
-    std::map<double, std::list<std::unique_ptr<Order>>> buyOrders;
-    std::map<double, std::list<std::unique_ptr<Order>>> sellOrders;
+    std::priority_queue<Order> buyOrders;  
+    std::priority_queue<Order> sellOrders; 
 
     void addOrder(int orderId, double price, int quantity, const std::string& orderType);
     const Order* findBestBuyOrder();
