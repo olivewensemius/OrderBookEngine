@@ -1,118 +1,167 @@
 #include "OrderBook.h"
 
-void OrderBook::addOrder(int orderId, double price, int quantity, const std::string& orderType) {
-    auto newOrder = Order(orderId, price, quantity, orderType);
-    
-    if (orderType == "buy") {
-        buyOrders.push(newOrder);
-    } else if (orderType == "sell") {
-        sellOrders.push(newOrder);
-    }
+void OrderBook::addOrder(int orderId, double price, int quantity, std::string orderType) {
+    Order newOrder(orderId, price, quantity, orderType);
+
+    if(orderType == "buy"){
+        buyOrders[price].push_back(newOrder);
+    }else if(orderType == "sell"){
+        sellOrders[price].push_back(newOrder);
+    };
 
     std::cout << "Order Added: " << orderType << " " << quantity 
               << " shares at $" << price << std::endl;
-
-    matchOrders();
 }
 
-const OrderBook::Order* OrderBook::findBestBuyOrder() {
-    if (!buyOrders.empty()) {
-        return &buyOrders.top();
+OrderBook::Order OrderBook::findBestBuyOrder(){
+    if(!buyOrders.empty()){
+        return buyOrders.rbegin()->second.front();
     }
     throw std::runtime_error("No buy orders available");
 }
 
-const OrderBook::Order* OrderBook::findBestSellOrder() {
-    if (!sellOrders.empty()) {
-        return &sellOrders.top();
+OrderBook::Order OrderBook::findBestSellOrder(){
+    if(!sellOrders.empty()){
+        return sellOrders.begin()->second.front();
     }
     throw std::runtime_error("No sell orders available");
 }
 
-std::list<const OrderBook::Order*> OrderBook::findOrdersAtPrice(double price, const std::string& orderType) {
-    std::list<const OrderBook::Order*> ordersList;
-
+std::list<OrderBook::Order> OrderBook::findOrdersAtPrice(double price, std::string orderType) {
     if (orderType == "buy") {
-        auto tempQueue = buyOrders;
-        while (!tempQueue.empty()) {
-            const auto& order = tempQueue.top();
-            if (order.price == price) {
-                ordersList.push_back(&order);
-            }
-            tempQueue.pop();
+        auto it = buyOrders.find(price);
+        if (it != buyOrders.end()) {
+            return it->second;
         }
     } else {
-        auto tempQueue = sellOrders;
-        while (!tempQueue.empty()) {
-            const auto& order = tempQueue.top();
-            if (order.price == price) {
-                ordersList.push_back(&order);
-            }
-            tempQueue.pop();
+        auto it = sellOrders.find(price);
+        if (it != sellOrders.end()) {
+            return it->second;
         }
     }
-    return ordersList;
+    return {};
 }
-
 
 void OrderBook::printOrders() {
-    std::cout << "\nBuy Orders (Highest Price First):\n";
-    auto tempBuy = buyOrders;
-    while (!tempBuy.empty()) {
-        const auto& order = tempBuy.top();
-        std::cout << "ID: " << order.orderId << " | " 
-                  << order.quantity << " shares at $" << order.price << "\n";
-        tempBuy.pop();
+    std::cout << "\nBuy Orders:\n";
+    for (auto it = buyOrders.rbegin(); it != buyOrders.rend(); ++it) {
+        for (const auto &order : it->second) {
+            std::cout << "ID: " << order.orderId << " | " 
+                      << order.quantity << " shares at $" << order.price << "\n";
+        }
     }
 
-    std::cout << "\nSell Orders (Lowest Price First):\n";
-    auto tempSell = sellOrders;
-    while (!tempSell.empty()) {
-        const auto& order = tempSell.top();
-        std::cout << "ID: " << order.orderId << " | " 
-                  << order.quantity << " shares at $" << order.price << "\n";
-        tempSell.pop();
+    std::cout << "\nSell Orders:\n";
+    for (auto it = sellOrders.begin(); it != sellOrders.end(); ++it) {
+        for (const auto &order : it->second) {
+            std::cout << "ID: " << order.orderId << " | " 
+                      << order.quantity << " shares at $" << order.price << "\n";
+        }
     }
 }
 
-void OrderBook::printList(const std::list<const OrderBook::Order*>& orderList) {
+void OrderBook::printList(std::list<OrderBook::Order> orderList){
     for (const auto& order : orderList) {
-        std::cout << "ID: " << order->orderId << " | " 
-                  << order->quantity << " shares at $" << order->price << "\n";
+        std::cout << "ID: " << order.orderId << " | " 
+                  << order.quantity << " shares at $" << order.price << "\n";
     }
 }
 
-
-void OrderBook::matchOrders() {
+std::vector<OrderBook::Trade> OrderBook::matchOrders() {
+    std::vector<Trade> newTrades;
     while (!buyOrders.empty() && !sellOrders.empty()) {
-        auto bestBid = buyOrders.top();  // Get best buy order (highest price)
-        auto bestAsk = sellOrders.top(); // Get best sell order (lowest price)
+        auto bestBuyIt = buyOrders.rbegin();  //highest buy price
+        auto bestSellIt = sellOrders.begin(); // lowest sell price
+        
+        if (bestBuyIt->first >= bestSellIt->first) {
+            double tradePrice = bestSellIt->first;
+            
+            auto& buyOrderList = bestBuyIt->second;
+            auto& sellOrderList = bestSellIt->second;
+            
 
-        if (bestBid.price < bestAsk.price) {
-            // No matching possible, exit
+            while (!buyOrderList.empty() && !sellOrderList.empty()) {
+                Order& buyOrder = buyOrderList.front();
+                Order& sellOrder = sellOrderList.front();
+                
+                int tradeQuantity = std::min(buyOrder.quantity, sellOrder.quantity);
+                
+                // create a new trade
+                Trade newTrade(buyOrder.orderId, sellOrder.orderId, tradePrice, tradeQuantity);
+                newTrades.push_back(newTrade);
+                completedTrades.push_back(newTrade);
+            
+                buyOrder.quantity -= tradeQuantity;
+                sellOrder.quantity -= tradeQuantity;
+                
+                if (buyOrder.quantity == 0) {
+                    buyOrderList.pop_front();
+                }
+                
+                if (sellOrder.quantity == 0) {
+                    sellOrderList.pop_front();
+                }
+
+                if (buyOrderList.empty()) {
+                    break;
+                }
+            }
+            
+            if (buyOrderList.empty()) {
+                buyOrders.erase(std::next(bestBuyIt).base());
+            }
+            
+            if (sellOrderList.empty()) {
+                sellOrders.erase(bestSellIt->first);
+            }
+        } else {
             break;
         }
+    }
+    
+    std::cout << "Matched " << newTrades.size() << " trades" << std::endl;
+    return newTrades;
+}
 
-        // Determine trade quantity
-        int tradeQuantity = std::min(bestBid.quantity, bestAsk.quantity);
-        double tradePrice = bestAsk.price;  // Trade happens at the ask price
-
-        std::cout << "Executed Trade: " << tradeQuantity << " shares at $" << tradePrice << "\n";
-
-        // Update order quantities
-        bestBid.quantity -= tradeQuantity;
-        bestAsk.quantity -= tradeQuantity;
-
-        // Remove fully executed orders
-        buyOrders.pop();
-        sellOrders.pop();
-
-        // If an order is partially filled, reinsert it
-        if (bestBid.quantity > 0) {
-            buyOrders.push(bestBid);
+void OrderBook::removeOrder(int orderId, std::string orderType) {
+    auto& orders = (orderType == "buy") ? buyOrders : sellOrders;
+        for (auto& [price, orderList] : orders) {
+        for (auto it = orderList.begin(); it != orderList.end(); ++it) {
+            if (it->orderId == orderId) {
+                orderList.erase(it);
+                if (orderList.empty()) {
+                    orders.erase(price);
+                }
+                std::cout << "Order " << orderId << " removed" << std::endl;
+                return;
+            }
         }
-        if (bestAsk.quantity > 0) {
-            sellOrders.push(bestAsk);
+    }
+    
+    std::cout << "Order " << orderId << " not found" << std::endl;
+}
+
+void OrderBook::updateOrderQuantity(int orderId, std::string orderType, int newQuantity) {
+    auto& orders = (orderType == "buy") ? buyOrders : sellOrders;
+    
+    for (auto& [price, orderList] : orders) {
+        for (auto& order : orderList) {
+            if (order.orderId == orderId) {
+                order.quantity = newQuantity;
+                std::cout << "Order " << orderId << " updated to quantity " << newQuantity << std::endl;
+                return;
+            }
         }
+    }
+    
+    std::cout << "Order " << orderId << " not found" << std::endl;
+}
+
+void OrderBook::printTrades() {
+    std::cout << "\nCompleted Trades:\n";
+    for (const auto& trade : completedTrades) {
+        std::cout << "Trade: Buy Order #" << trade.buyOrderId 
+                  << " and Sell Order #" << trade.sellOrderId
+                  << " | " << trade.quantity << " shares at $" << trade.price << "\n";
     }
 }

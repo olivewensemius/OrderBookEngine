@@ -8,32 +8,37 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     
+    std::cout << "\n===== ORDER BOOK DEMO =====\n";
     OrderBook ob;
+
+    std::cout << "\nAdding Buy Orders:\n";
     ob.addOrder(1, 50.0, 100, "buy");
     ob.addOrder(2, 51.0, 200, "buy");
-    ob.addOrder(3, 49.5, 150, "sell");
-    ob.addOrder(4, 50.5, 250, "sell");
-
-    ob.printOrders();
-
-    const OrderBook::Order* bestBuy = ob.findBestBuyOrder();
-    std::cout << "\nBest Buy Order: " << bestBuy->quantity << " shares at $" << bestBuy->price << "\n";
-
-    const OrderBook::Order* bestSell = ob.findBestSellOrder();
-    std::cout << "Best Sell Order: " << bestSell->quantity << " shares at $" << bestSell->price << "\n";
-
-    std::list<const OrderBook::Order*> ordersAt50 = ob.findOrdersAtPrice(50.5, "sell");
+    ob.addOrder(3, 49.0, 150, "buy");
     
-    ob.printList(ordersAt50);
-    
-    // Add orders and test matching
-    ob.addOrder(1, 100.0, 50, "buy");
-    ob.addOrder(2, 102.0, 100, "buy");
-    ob.addOrder(3, 101.0, 200, "buy");
-    ob.addOrder(4, 101.5, 150, "sell");
-    ob.addOrder(5, 101.0, 50, "sell");
+    std::cout << "\nAdding Sell Orders:\n";
+    ob.addOrder(4, 49.5, 50, "sell");
+    ob.addOrder(5, 50.5, 250, "sell");
+    ob.addOrder(6, 51.5, 100, "sell");
+
+    std::cout << "\n===== INITIAL ORDER BOOK STATE =====\n";
     ob.printOrders();
-
-
+    
+    std::cout << "\n===== MATCHING ORDERS =====\n";
+    std::vector<OrderBook::Trade> trades = ob.matchOrders();
+    
+    std::cout << "\n===== ORDER BOOK AFTER MATCHING =====\n";
+    ob.printOrders();
+    
+    ob.printTrades();
+    
+    std::cout << "\n===== ORDER MANIPULATION =====\n";
+    
+    ob.updateOrderQuantity(5, "sell", 100);
+    
+    ob.removeOrder(3, "buy");
+    std::cout << "\n===== FINAL ORDER BOOK STATE =====\n";
+    ob.printOrders();
+    
     return 0;
 }

@@ -3,10 +3,10 @@
 
 #include <iostream>
 #include <map>
-#include <list>
-#include <memory>
 #include <string>
-#include <queue>
+#include <list>
+#include <vector>
+#include <algorithm>
 
 class OrderBook {
 public:
@@ -17,22 +17,42 @@ public:
         std::string orderType;  
         Order(int id, double p, int q, std::string type) 
             : orderId(id), price(p), quantity(q), orderType(type) {}
+    };
+    
+    // trade record structure to keep track of executed trades
+    struct Trade {
+        int buyOrderId;
+        int sellOrderId;
+        double price;
+        int quantity;
         
-        bool operator<(const Order& other) const {
-                return (orderType == "buy") ? (price < other.price) : (price > other.price);
-            }
+        Trade(int buy, int sell, double p, int q) 
+            : buyOrderId(buy), sellOrderId(sell), price(p), quantity(q) {}
     };
 
-    std::priority_queue<Order> buyOrders;  
-    std::priority_queue<Order> sellOrders; 
+    // price-ordered maps for buy and sell sides
+    std::map<double, std::list<Order>> buyOrders;
+    std::map<double, std::list<Order>> sellOrders;
+    
+    // store all completed trades
+    std::vector<Trade> completedTrades;
 
-    void addOrder(int orderId, double price, int quantity, const std::string& orderType);
-    const Order* findBestBuyOrder();
-    const Order* findBestSellOrder();
-    std::list<const Order*> findOrdersAtPrice(double price, const std::string& orderType);
+    // core order management 
+    void addOrder(int orderId, double price, int quantity, std::string orderType);
+    void removeOrder(int orderId, std::string orderType);
+    void updateOrderQuantity(int orderId, std::string orderType, int newQuantity);
+    
+    // matching and execution
+    std::vector<Trade> matchOrders();
+    
+    // lookup
+    Order findBestBuyOrder();
+    Order findBestSellOrder();
+    std::list<Order> findOrdersAtPrice(double price, std::string orderType);
+    // display
     void printOrders();
-    void printList(const std::list<const Order*>& orderList);
-    void matchOrders();
+    void printList(std::list<Order> orderList);
+    void printTrades();
 };
 
 #endif // ORDERBOOK_H
